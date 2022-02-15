@@ -401,7 +401,7 @@ namespace myMineApp {
 	const float REFILL_SPEED = 1.0/240; // rc/sec
 	const float DRAIN_UNTIL_OVERHEAT = 1.0/5; // rc
 	const float OVERHEAT_WAIT = 10.0; // sec
-	const float SCORE_PER_OVERHEAT = 3.05; // unitless; +.5 for scoring error
+	const float SCORE_PER_OVERHEAT = 10.0; // unitless
 	// ## Refill speed prisoner's dilemma
 	// If the quadcopter completely drains the mine, the mine will be recharged
 	// with REFILL_SPEED and will be unusable until full; otherwise, the mine
@@ -435,9 +435,9 @@ namespace myMineApp {
 		if (storage == 0.0) refilling = true, justEmptied = true;
 	}
 	void incPartialScore() {
-		partialScore += DRAIN_SPEED * dtSec;
-		if (partialScore >= DRAIN_UNTIL_OVERHEAT / SCORE_PER_OVERHEAT) {
-			partialScore -= DRAIN_UNTIL_OVERHEAT / SCORE_PER_OVERHEAT;
+		partialScore += DRAIN_SPEED * dtSec * SCORE_PER_OVERHEAT / DRAIN_UNTIL_OVERHEAT;
+		if (partialScore >= 1.0) {
+			partialScore -= 1.0;
 			reportScore = true;
 		}
 	}
@@ -464,7 +464,7 @@ namespace myMineApp {
 			naturalRefillStorage();
 			break;
 		case 1:
-			partialScore = 0.0;
+			partialScore = 0.95;
 		case 3:
 			drainStorage();
 			incPartialScore();
