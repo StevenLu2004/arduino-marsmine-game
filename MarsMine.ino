@@ -126,10 +126,10 @@ public:
 
 
 namespace myWifi {
-	// const char* STASSID = "PiLab";
-	// const char* STAPSK = "thisispilab";
-	const char* STASSID = "PRIS_Student";
-	const char* STAPSK = "wearethebest1";
+	const char* STASSID = "PiLab";
+	const char* STAPSK = "thisispilab";
+	// const char* STASSID = "PRIS_Student";
+	// const char* STAPSK = "wearethebest1";
 	uint32_t nextReconnect;
 	const uint16_t RECONNECT_WAIT = 10000;
 	uint8_t status; // R2L, bit 0: current status, bit 1: status last time
@@ -178,7 +178,7 @@ namespace myUdp {
 		_askServerIp();
 	}
 
-	void isPanicking() { return !hasServerIp && tasks.isFull(); }
+	bool isPanicking() { return !hasServerIp && tasks.isFull(); }
 
 	void update() {
 		while (int packSize = sock.parsePacket()) {
@@ -343,8 +343,8 @@ namespace myRfReader {
 		// Reset ModWidthReg
 		rc.PCD_WriteRegister(rc.ModWidthReg, 0x26);
 
-		MFRC522::StatusCode result = rc.PICC_WakeupA(bufferATQA, &bufferSize);
-		return (result == STATUS_OK || result == STATUS_COLLISION);
+		MFRC522::StatusCode s = rc.PICC_WakeupA(bufferATQA, &bufferSize);
+		return (s == MFRC522::STATUS_OK || s == MFRC522::STATUS_COLLISION);
 	}
 
 	bool readCardSerial() {
@@ -352,8 +352,8 @@ namespace myRfReader {
 		// but matches semantics in Martin-Laclaustra's example. Don't know
 		// what's the effect of including/excluding the validBits argument in
 		// MFRC522::PICC_Select().
-		MFRC522::StatusCode result = rc.PICC_Select(&rc.uid, 8 * rc.uid.size);
-		return (result == STATUS_OK);
+		MFRC522::StatusCode s = rc.PICC_Select(&rc.uid, 8 * rc.uid.size);
+		return (s == MFRC522::STATUS_OK);
 	}
 
 	void updateCardId() {
@@ -396,11 +396,12 @@ namespace myRfReader {
 
 
 namespace myMineApp {
-	const float DRAIN_SPEED = 0.1; // rc/sec
-	const float NATURAL_REFILL_SPEED = 0.1, REFILL_SPEED = 0.06; // rc/sec
-	const float DRAIN_UNTIL_OVERHEAT = 0.2; // rc
-	const float OVERHEAT_WAIT = 5.0; // sec
-	const uint8_t SCORE_PER_OVERHEAT = 3;
+	const float DRAIN_SPEED = 1.0/30; // rc/sec
+	const float NATURAL_REFILL_SPEED = 1.0/120; // rc/sec
+	const float REFILL_SPEED = 1.0/240; // rc/sec
+	const float DRAIN_UNTIL_OVERHEAT = 1.0/5; // rc
+	const float OVERHEAT_WAIT = 10.0; // sec
+	const float SCORE_PER_OVERHEAT = 3.05; // unitless; +.5 for scoring error
 	// ## Refill speed prisoner's dilemma
 	// If the quadcopter completely drains the mine, the mine will be recharged
 	// with REFILL_SPEED and will be unusable until full; otherwise, the mine
@@ -416,8 +417,12 @@ namespace myMineApp {
 	bool overheating, refilling; // More signals
 	bool justOverheated, justCooled, justRefilled, justEmptied; // More signals
 
-	void incHeat() { heat = MIN(heat + dtSec/OVERHEAT_WAIT, 1.0); }
-	void decHeat() { heat = MAX(heat - dtSec/OVERHEAT_WAIT, 0.0); }
+	void incHeat() {
+		heat = MIN(heat + DRAIN_SPEED * dtSec / DRAIN_UNTIL_OVERHEAT, 1.0);
+	}
+	void decHeat() {
+		heat = MAX(heat - dtSec / OVERHEAT_WAIT, 0.0);
+	}
 	void naturalRefillStorage() {
 		storage = MIN(storage + NATURAL_REFILL_SPEED * dtSec, 1.0);
 	}
@@ -442,11 +447,11 @@ namespace myMineApp {
 		reportScore = false;
 		justOverheated = justCooled = justRefilled = justEmptied = false;
 
-		if (hasDrone & 1) incOverheat();
-		else decOverheat();
+		if (hasDrone & 1) incHeat();
+		else decHeat();
 
 		if (heat == 1.0) overheating = true, justOverheated = true;
-		else if (heat == 0.0) oveheating = false, justCooled = true;
+		else if (heat == 0.0) overheating = false, justCooled = true;
 
 		if (refilling) { refillStorage(); return; }
 
