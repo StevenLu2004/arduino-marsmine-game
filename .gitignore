@@ -1,0 +1,13 @@
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+
+exec
+debug
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.o
+*.sd
