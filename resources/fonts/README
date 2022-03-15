@@ -1,0 +1,3 @@
+This directory contains fonts. You can find these fonts or substitutes yourself,
+see `server_gui.py`, but for simplicity, I'm not gonna include the font files
+and bother myself with all the license works for such a small project.
