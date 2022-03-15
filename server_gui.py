@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from __future__ import annotations
+import conf_server_gui as conf
 import discovery
 import functools
 import pprint
@@ -16,31 +17,15 @@ _I2 = Tuple[int, int]
 _I4 = Tuple[int, int, int, int]
 _F2 = Tuple[float, float]
 
-COLOR_BG1: Final = (14,16,46,255)  # rgb(14,16,46) Alternating bg color 1
-COLOR_BG2: Final = (44,48,94,255)  # rgb(44,48,94) Alternating bg color 2
-COLOR_GOLD: Final = (255,221,0,255)  # rgb(255,221,0) First place
-COLOR_SILVER: Final = (212,212,212,255)  # rgb(212,212,212) Second place
-COLOR_BRONZE: Final = (224,166,85,255)  # rgb(224,166,85) Third place
-COLOR_TEXT: Final = (92,184,162,255)  # rgb(92,184,162) >3 place
-COLORMAP_FG: Final = {0: COLOR_GOLD, 1: COLOR_SILVER, 2: COLOR_BRONZE}  # For convenience
-FONT1_FILENAME = 'Ubuntu-Regular.ttf'  # Team name text font
-FONT2_FILENAME = 'Ubuntu-Regular.ttf'  # Score text font
-FIRST_BYTE_MODE: Final = True  # Match only 1st byte of UID (legacy mode)
-FOUR_BYTE_MODE: Final = False  # Match 4 head bytes of UID
-FULL_MATCH_MODE: Final = False  # Require exact match for UID
-PORT: Final = 88  # Main socket port
-MCAST_GROUP: Final = "224.0.3.141"  # Multicast group
-MCAST_PORT: Final = 817  # Multicast port
-MCAST_KEY1: Final = b"q\xfe\xce\x92"
-MCAST_KEY2: Final = b"\x1f|\xde\xe9"
-
-
-DIR: Final = Path(__file__).resolve().parent
-FONTDIR: Final = DIR/'resources/fonts'
-FONT1: Final = pygame.font.Font(FONTDIR/'Ubuntu-Regular.ttf', 120)
-FONT2: Final = pygame.font.Font(FONTDIR/'Ubuntu-Regular.ttf', 120)
+TEAM_CNT: Final = len(conf.TEAM_LIST)
+LINE_H: Final = conf.H // TEAM_CNT
+FONT_SIZE: Final = min(150, int(LINE_H // 1.5))
 
 pygame.init()
+DIR: Final = Path(__file__).resolve().parent
+FONTDIR: Final = DIR/'resources/fonts'
+FONT1: Final = pygame.font.Font(FONTDIR/conf.FONT1_FILENAME, FONT_SIZE)
+FONT2: Final = pygame.font.Font(FONTDIR/conf.FONT2_FILENAME, FONT_SIZE)
 
 
 @functools.lru_cache(maxsize=1024)
@@ -86,8 +71,7 @@ class App:
         self.xmargin = xmargin
         self.window: pygame.surface.Surface
         self.sock: socket.socket
-        self.mirror = discovery.Mirror(
-            MCAST_GROUP, [MCAST_PORT], MCAST_KEY1, MCAST_KEY2)
+        self.mirror = discovery.Mirror(conf.MCAST_GROUP, [conf.MCAST_PORT], conf.MCAST_KEY1, conf.MCAST_KEY2)
         self.teams = [Team(name, uid) for name, uid in teams]
         self.is_running = False
 
@@ -104,11 +88,11 @@ class App:
     def exec_init(self) -> None:
         self.window = pygame.display.set_mode(self.dims, flags=pygame.FULLSCREEN, vsync=True)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind(("0.0.0.0", PORT))
+        self.sock.bind(("0.0.0.0", conf.PORT))
         self.sock.settimeout(0)
         self.mirror.start()
 
-        print(f"[Ready ip=*:{PORT}, mcast={MCAST_GROUP}:{MCAST_PORT}]")
+        print(f"[Ready ip=*:{conf.PORT}, mcast={conf.MCAST_GROUP}:{conf.MCAST_PORT}]")
         print("Server IP suggestions:")
         pprint.pprint(socket.gethostbyname_ex(socket.gethostname()))
 
@@ -129,9 +113,9 @@ class App:
                     break
                 for t in self.teams:
                     if (
-                            (FIRST_BYTE_MODE and c[0] == t.uid[0])
-                            or (FOUR_BYTE_MODE and c[:4] == t.uid[:4])
-                            or (FULL_MATCH_MODE and c == t.uid)):
+                            (conf.FIRST_BYTE_MODE and c[0] == t.uid[0])
+                            or (conf.FOUR_BYTE_MODE and c[:4] == t.uid[:4])
+                            or (conf.FULL_MATCH_MODE and c == t.uid)):
                         t.score += 1
                         f_update = True
                         break
@@ -144,7 +128,7 @@ class App:
 
             self.window.fill((0,0,0,0))
             for i, t in enumerate(self.teams):
-                t.draw(self.window, self.xmargin, i * self.h, self.h, COLOR_BG1 if i & 1 else COLOR_BG2)
+                t.draw(self.window, self.xmargin, i * self.h, self.h, conf.COLOR_BG1 if i & 1 else conf.COLOR_BG2)
             pygame.display.flip()
 
     def exec_end(self) -> None:
@@ -153,26 +137,11 @@ class App:
 
     def redraw_each_team(self) -> None:
         for i, t in enumerate(self.teams):
-            t.redraw_inner(COLORMAP_FG.get(i, COLOR_TEXT))
+            t.redraw_inner(conf.COLORMAP_FG.get(i, conf.COLOR_TEXT))
 
 
 def main() -> None:
-    team_list = [
-        ("Team1", b"aaaa"),
-        ("Team2", b"bbbb"),
-        ("Team3", b"cccc"),
-        ("Team4", b"dddd"),
-        ("Team5", b"eeee"),
-        ("Team6", b"ffff"),
-        ("Team7", b"gggg"),
-        ("Team8", b"hhhh"),
-        ("Team9", b"iiii"),
-        ("TeamA", b"jjjj"),
-        ("TeamB", b"kkkk"),
-        ("TeamC", b"llll"),
-    ]
-    W, H = 3360, 2100
-    app = App((W, H), H // len(team_list), int(W * .2), team_list)
+    app = App((conf.W, conf.H), LINE_H, int(conf.W * .15), conf.TEAM_LIST)
     app.exec_()
 
 
