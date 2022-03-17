@@ -14,12 +14,12 @@ FOUR_BYTE_MODE: Final = False
 FULL_MATCH_MODE: Final = False
 # Team list
 TEAM_LIST: Final = [
-    ("Team1", b"UID_"),
-    ("Team2", b"UID_"),
-    ("Team3", b"UID_"),
-    ("Team4", b"UID_"),
-    ("Team5", b"UID_"),
-    ("Team6", b"UID_"),
+    ("Team1", b"1UID"),
+    ("Team2", b"2UID"),
+    ("Team3", b"3UID"),
+    ("Team4", b"4UID"),
+    ("Team5", b"5UID"),
+    ("Team6", b"6UID"),
 ]
 
 # ======

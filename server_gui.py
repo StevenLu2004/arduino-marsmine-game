@@ -7,6 +7,7 @@ import functools
 import pprint
 import pygame
 import socket
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Tuple
 if TYPE_CHECKING:
@@ -17,13 +18,15 @@ _I2 = Tuple[int, int]
 _I4 = Tuple[int, int, int, int]
 _F2 = Tuple[float, float]
 
+IS_OSX: Final = (sys.platform.lower() == "darwin")
+
 TEAM_CNT: Final = len(conf.TEAM_LIST)
 LINE_H: Final = conf.H // TEAM_CNT
 FONT_SIZE: Final = min(150, int(LINE_H // 1.5))
 
 pygame.init()
 DIR: Final = Path(__file__).resolve().parent
-FONTDIR: Final = DIR/'resources/fonts'
+FONTDIR: Final = DIR/"resources/fonts"
 FONT1: Final = pygame.font.Font(FONTDIR/conf.FONT1_FILENAME, FONT_SIZE)
 FONT2: Final = pygame.font.Font(FONTDIR/conf.FONT2_FILENAME, FONT_SIZE)
 
@@ -33,6 +36,13 @@ def _team_redraw_inner(name: str, score: int, fg: _I4) -> Tuple[pygame.surface.S
     n_tag = FONT1.render(name, False, fg)
     s_tag = FONT2.render(str(score), False, fg)
     return n_tag, s_tag
+
+
+def major_mod_pressed(e: pygame.event.Event) -> bool:
+    if IS_OSX:
+        return not not (e.mod & pygame.KMOD_GUI)
+    else:
+        return not not (e.mod & pygame.KMOD_CTRL)
 
 
 class Team:
@@ -100,11 +110,15 @@ class App:
         self.redraw_each_team()
         while self.is_running:
             events = pygame.event.get()
+            f_update = False
             for e in events:
                 if e.type == pygame.QUIT:
                     self.shutdown_from("pygame.QUIT (GUI)")
+                elif e.type == pygame.KEYDOWN:
+                    if major_mod_pressed(e) and e.key == pygame.K_r:
+                        f_update = True
+                        self.reset_team_scores()
 
-            f_update = False
             while True:
                 c: bytes
                 try:
@@ -138,6 +152,10 @@ class App:
     def redraw_each_team(self) -> None:
         for i, t in enumerate(self.teams):
             t.redraw_inner(conf.COLORMAP_FG.get(i, conf.COLOR_TEXT))
+
+    def reset_team_scores(self) -> None:
+        for t in self.teams:
+            t.score = 0
 
 
 def main() -> None:
