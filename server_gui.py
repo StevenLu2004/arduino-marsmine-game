@@ -33,8 +33,8 @@ FONT2: Final = pygame.font.Font(FONTDIR/conf.FONT2_FILENAME, FONT_SIZE)
 
 @functools.lru_cache(maxsize=1024)
 def _team_redraw_inner(name: str, score: int, fg: _I4) -> Tuple[pygame.surface.Surface, pygame.surface.Surface]:
-    n_tag = FONT1.render(name, False, fg)
-    s_tag = FONT2.render(str(score), False, fg)
+    n_tag = FONT1.render(name, True, fg)
+    s_tag = FONT2.render(str(score), True, fg)
     return n_tag, s_tag
 
 
