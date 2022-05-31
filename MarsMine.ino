@@ -396,12 +396,12 @@ namespace myRfReader {
 
 
 namespace myMineApp {
-	const float DRAIN_SPEED = 1.0/30; // rc/sec
-	const float NATURAL_REFILL_SPEED = 1.0/120; // rc/sec
-	const float REFILL_SPEED = 1.0/240; // rc/sec
-	const float DRAIN_UNTIL_OVERHEAT = 1.0/5; // rc
+	const float DRAIN_SPEED = 1.0/1000; // rc/sec; essentially never deplete
+	const float NATURAL_REFILL_SPEED = 10.0; // rc/sec; takes 0.1 seconds to replenish
+	const float REFILL_SPEED = 10.0; // rc/sec; takes 0.1 seconds to replenish
+	const float DRAIN_UNTIL_OVERHEAT = 2.0; // rc; max can drain is 1.0
 	const float OVERHEAT_WAIT = 10.0; // sec
-	const float SCORE_PER_OVERHEAT = 10.0; // unitless
+	const float SCORE_PER_OVERHEAT = 2000.0; // unitless
 	// ## Refill speed prisoner's dilemma
 	// If the quadcopter completely drains the mine, the mine will be recharged
 	// with REFILL_SPEED and will be unusable until full; otherwise, the mine
@@ -464,7 +464,8 @@ namespace myMineApp {
 			naturalRefillStorage();
 			break;
 		case 1:
-			partialScore = 0.95;
+			partialScore = 0.0; // falling-edge
+			// partialScore = 0.95; // rising-edge
 		case 3:
 			drainStorage();
 			incPartialScore();
